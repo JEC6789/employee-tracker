@@ -87,7 +87,54 @@ const addThingPrompt = thing => {
                     }
                 }
             }
-        ]).then(addDepartment)
+        ]).then(addDepartment);
+    } else if(thing === "role") {
+        return inquirer.prompt([
+            {
+                type: "input",
+                name: "title",
+                message: "What is the name of the role?",
+                validate: nameInput => {
+                    if (nameInput) {
+                        return true;
+                    } else {
+                        console.log("A role with no name just sounds bad in concept");
+                        return false;
+                    }
+                }
+            },
+            {
+                type: "input",
+                name: "salary",
+                message: "What is the salary of the role?",
+                validate: nameInput => {
+                    if (nameInput) {
+                        if(!isNaN(nameInput)) {
+                            return true;
+                        } else {
+                            console.log("You just entered something that ain't a number. Whether that's because you included a currency symbol or because of something else, it doesn't matter in the end. Please enter a numerical value only.");
+                            return false;
+                        }
+                    } else {
+                        console.log("Okay. I totally understand if you don't want to disclose salary information in the name of capitalism, but if that's why you left this blank, ... this is no time for a soapbox! Put in the salary information or else!");
+                        return false;
+                    }
+                }
+            },
+            {
+                type: "input",
+                name: "department",
+                message: "Which department does the role belong to?",
+                validate: nameInput => {
+                    if (nameInput) {
+                        return true;
+                    } else {
+                        console.log("Are you saying this role doesn't belong to any specific department? Huh. Good argument. Unfortunately, this program is unable to understand such a thing, so you better figure out a department to put your role under!");
+                        return false;
+                    }
+                }
+            }
+        ]).then(addRole);
     }
 };
 
@@ -103,7 +150,34 @@ const addDepartment = body => {
         console.log("Added " + body.name + " to the database");
         promptUser();
     });
-    
+};
+
+const addRole = body => {
+    const sql = `INSERT INTO role (title, salary, department_id)
+    VALUES (?,?,?)`;
+    const params = [body.title, body.salary, getDepartmentId(body.department)];
+
+    db.query(sql, params, (err, result) => {
+        if(err) {
+            return console.log(err.message);
+        }
+        console.log("Added " + body.title + " to the database");
+        promptUser();
+    });
+};
+
+const getDepartmentId = department => {
+    const sql = `SELECT EXISTS(SELECT * FROM department WHERE name = "${department}")`;
+    db.query(sql, (err, rows) => {
+        console.log(rows);
+        if(err) {
+            return console.log(err.message);
+        }
+        /*if( === 1) {
+            return true;
+        }*/
+        return false;
+    });
 };
 
 db.connect(err => {
