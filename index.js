@@ -135,6 +135,53 @@ const addThingPrompt = thing => {
                 }
             }
         ]).then(addRole);
+    } else if(thing === "employee") {
+        return inquirer.prompt([
+            {
+                type: "input",
+                name: "first_name",
+                message: "What is the employee's first name?",
+                validate: nameInput => {
+                    if (nameInput) {
+                        return true;
+                    } else {
+                        console.log(`Does your employee have no first name? Did this person have some quotes that could get posted to /r/im14andthisisdeep during their job interview, such as "I don't have a first name worth mentioning?" If that's what happened, then that guy shouldn't have been hired in the first place...`);
+                        return false;
+                    }
+                }
+            },
+            {
+                type: "input",
+                name: "last_name",
+                message: "What is the employee's last name?",
+                validate: nameInput => {
+                    if (nameInput) {
+                        return true;
+                    } else {
+                        console.log(`Does your employee have no last name? Did the converstion during the job interview go something like:\n"The name's Doug."\n"And what's your last name?"\n"The name's Doug."\n"Is Doug both your first name and last name?"\n"The name's Doug."\nI'm feelin' sorry for Doug. His parents didn't even care enough about him to give him a last name. What a cruel world we live in. In that case, since you and your other employees are the only people he can consider family, how about you give Doug your own last name? That way, Doug knows you all care about him and he can finally feel a sense of happiness in an otherwise cold, dark world.`);
+                        return false;
+                    }
+                }
+            },
+            {
+                type: "input",
+                name: "role",
+                message: "What is the employee's role?",
+                validate: nameInput => {
+                    if (nameInput) {
+                        return true;
+                    } else {
+                        console.log("If your employee doesn't have a role in your business, why did you hire them in the first place? Enter a role here please");
+                        return false;
+                    }
+                }
+            },
+            {
+                type: "input",
+                name: "manager",
+                message: "What is the employee's manager? (not required)",
+            }
+        ]).then(addEmployee)
     }
 };
 
@@ -165,6 +212,13 @@ const addRole = body => {
         console.log("Added " + body.title + " to the database");
         promptUser();
     });
+};
+
+const addEmployee = body => {
+    console.log(body);
+    const sql = `INSERT INTO role (first_name, last_name, role_id, manager_id)
+    VALUES (?,?,?,?)`;
+    // Not adding anything else here until I fix the issues with addRole, as most of that code could largely be copied into this one
 };
 
 const getId = (table, rowName, searchTerm) => {
