@@ -23,7 +23,7 @@ const promptController = input => {
 
     switch(input.whatToDo) {
         case "End Program":
-            return console.log("... ok bye");
+            return console.log("See you later!");
         case "View Departments":
             sql = `SELECT * FROM department`;
             db.query(sql, (err, rows) => {
@@ -155,8 +155,9 @@ const addDepartment = body => {
 const addRole = body => {
     const sql = `INSERT INTO role (title, salary, department_id)
     VALUES (?,?,?)`;
-    const params = [body.title, body.salary, getDepartmentId(body.department)];
-
+    const department_id = getId("department", "name", body.department);
+    const params = [body.title, body.salary, department_id];
+    // Bug: department_id is undefined by the time the db query below is run. Probably a synchronicity issue. Db query appropriately complains about it
     db.query(sql, params, (err, result) => {
         if(err) {
             return console.log(err.message);
@@ -166,17 +167,35 @@ const addRole = body => {
     });
 };
 
-const getDepartmentId = department => {
-    const sql = `SELECT EXISTS(SELECT * FROM department WHERE name = "${department}")`;
-    db.query(sql, (err, rows) => {
-        console.log(rows);
+const getId = (table, rowName, searchTerm) => {
+    // First determines if the search term inputted exists
+    let sql = `SELECT EXISTS(SELECT * FROM ${table} WHERE ${rowName} = "${searchTerm}")`
+    db.query(sql, (err, row) => {
+        console.log(row);
         if(err) {
             return console.log(err.message);
         }
-        /*if( === 1) {
-            return true;
-        }*/
-        return false;
+        /* Non-bug issue: this db query sets "row" to the following:
+        [
+            { 'EXISTS(SELECT * FROM department WHERE name = "The Struggle")': 1 }
+        ]
+        I have no idea how to extract that numerical value from it. I've tried
+        searching for solutions online and I've probably already tried anything
+        a newcomer to JavaScript could think of. Until I figure this out, this
+        section of code is disabled and you get sent back to promptUser(). */
+        if(0 === 1) {
+            sql = `SELECT id FROM ${table} WHERE ${rowName} = "${searchTerm}"`;
+            db.query(sql, (err, cell) => {
+                if(err) {
+                    return console.log(err.message);
+                }
+                console.log(cell[0].id);
+                return cell[0].id;
+            });
+        } else {
+        console.log(`Hmmm... it seems that the ${table} you entered doesn't exist. If you didn't make any typos, try viewing the departments to see if what you're looking for is there.`)
+        promptUser();
+        }
     });
 };
 
