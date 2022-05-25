@@ -29,10 +29,10 @@ const promptController = input => {
             db.query(sql, (err, rows) => {
                 if(err) {
                     console.log(err.message);
-                    promptUser();
+                } else {
+                    console.table(rows);
                 }
-                console.table(rows);
-                promptUser();
+                return promptUser();
             });
             break;
         case "View Roles":
@@ -40,10 +40,10 @@ const promptController = input => {
             db.query(sql, (err, rows) => {
                 if(err) {
                     console.log(err.message);
-                    promptUser();
+                } else {
+                    console.table(rows);
                 }
-                console.table(rows);
-                promptUser();
+                return promptUser();
             });
             break;
         case "View Employees":
@@ -51,10 +51,10 @@ const promptController = input => {
             db.query(sql, (err, rows) => {
                 if(err) {
                     console.log(err.message);
-                    promptUser();
+                } else {
+                    console.table(rows);
                 }
-                console.table(rows);
-                promptUser();
+                return promptUser();
             });
             break;
         case "Add Department":
@@ -196,28 +196,26 @@ const addDepartment = body => {
     db.query(sql, params, (err, result) => {
         if(err) {
             console.log(err.message);
-            promptUser();
+        } else {
+            console.log("Added " + body.name + " to the database");
         }
-        console.log("Added " + body.name + " to the database");
-        promptUser();
+        return promptUser();
     });
 };
 
 const addRole = body => {
     const sql = `INSERT INTO role (title, salary, department_id)
     VALUES (?,?,?)`;
-    const department_id = getId("department", "name", body.department);
-    console.log("addRole: " + department_id);
-    const params = [body.title, body.salary, department_id];
+    const params = [body.title, body.salary, getId("department", "name", body.department)];
     /* Bug: department_id is undefined by the time the db query below is run. Probably a synchronicity issue.
     Async/await doesn't fix this. Db query appropriately complains about it */
     db.query(sql, params, (err, result) => {
         if(err) {
             console.log(err.message);
-            promptUser();
+        } else {
+            console.log("Added " + body.title + " to the database");
         }
-        console.log("Added " + body.title + " to the database");
-        promptUser();
+        return promptUser();
     });
 };
 
@@ -225,37 +223,28 @@ const addEmployee = body => {
     console.log(body);
     const sql = `INSERT INTO role (first_name, last_name, role_id, manager_id)
     VALUES (?,?,?,?)`;
-    // Not adding anything else here until I fix the issues with addRole, as most of that code could more or less be copied into this one
+    // Not adding anything else here until I fix the issue with addRole, as most of that code could more or less be copied into this one
 };
 
 const getId = (table, rowName, searchTerm) => {
-    // First determines if the search term inputted exists
     let sql = `SELECT EXISTS(SELECT * FROM ${table} WHERE ${rowName} = "${searchTerm}")`
     db.query(sql, (err, row) => {
-        console.log(row);
         if(err) {
-            return console.log(err.message);
+            console.log(err.message);
+            return promptUser();
         }
-        /* Non-bug issue: this db query sets "row" to the following:
-        [
-            { 'EXISTS(SELECT * FROM department WHERE name = "The Struggle")': 1 }
-        ]
-        I have no idea how to extract that numerical value from it. I've tried
-        searching for solutions online and I've probably already tried anything
-        a newcomer to JavaScript could think of. Until I figure this out, this
-        section of code is disabled and you get sent back to promptUser(). */
-        if(0 === 1) {
+        if(JSON.stringify(row).split(":").includes("1}]") === true) {
             sql = `SELECT id FROM ${table} WHERE ${rowName} = "${searchTerm}"`;
             db.query(sql, (err, cell) => {
                 if(err) {
-                    return console.log(err.message);
+                    console.log(err.message);
+                    return promptUser();
                 }
-                console.log("getId: " + cell[0].id);
                 return cell[0].id;
             });
         } else {
         console.log(`Hmmm... it seems that the ${table} you entered doesn't exist. If you didn't make any typos, try viewing the departments to see if what you're looking for is there.`)
-        promptUser();
+        return promptUser();
         }
     });
 };
