@@ -69,8 +69,12 @@ const promptController = input => {
             thing = "employee";
             addThingPrompt(thing);
             break;
+        case "Update Employee Role":
+            updateEmployeePrompt();
+            break;
         default:
-            return console.log("Congratulations. You just triggered this console message, which you should not be able to get under any circumstance. If you're not me, go ahead and report this issue at https://github.com/JEC6789/employee-tracker/issues so I can look into it further.");
+            console.log("Congratulations. You just triggered this console message, which you should not be able to get under any circumstance. If you're not me, go ahead and report this issue at https://github.com/JEC6789/employee-tracker/issues so I can look into it further.");
+            return promptUser();
     }
 };
 
@@ -90,7 +94,10 @@ const addThingPrompt = thing => {
                     }
                 }
             }
-        ]).then(addDepartment);
+        ]).then(addDepartment)
+        .catch(err => {
+            console.log(err);
+        });
     } else if(thing === "role") {
         return inquirer.prompt([
             {
@@ -137,7 +144,10 @@ const addThingPrompt = thing => {
                     }
                 }
             }
-        ]).then(addRole);
+        ]).then(addRole)
+        .catch(err => {
+            console.log(err);
+        });
     } else if(thing === "employee") {
         return inquirer.prompt([
             {
@@ -185,6 +195,9 @@ const addThingPrompt = thing => {
                 message: "What is the employee's manager? (not required)",
             }
         ]).then(addEmployee)
+        .catch(err => {
+            console.log(err);
+        });
     }
 };
 
@@ -208,7 +221,7 @@ const addRole = body => {
     VALUES (?,?,?)`;
     const params = [body.title, body.salary, getId("department", "name", body.department)];
     /* Bug: department_id is undefined by the time the db query below is run. Probably a synchronicity issue.
-    Async/await doesn't fix this. Db query appropriately complains about it */
+    Async/await doesn't fix this. Db query appropriately complains about it. addEmployee and updateEmployee suffer from the same issue */
     db.query(sql, params, (err, result) => {
         if(err) {
             console.log(err.message);
@@ -223,7 +236,77 @@ const addEmployee = body => {
     console.log(body);
     const sql = `INSERT INTO role (first_name, last_name, role_id, manager_id)
     VALUES (?,?,?,?)`;
-    // Not adding anything else here until I fix the issue with addRole, as most of that code could more or less be copied into this one
+    const params = [body.first_name, body.last_name, getId("role", "title", body.role), null/* might need a new function for this. Will probably be even more complex than getId, and I'm already in over my head with that one... */];
+    db.query(sql, params, (err, result) => {
+        if(err) {
+            console.log(err.message);
+        } else {
+            console.log("Added " + body.title + " to the database");
+        }
+        return promptUser();
+    });
+};
+
+const updateEmployeePrompt = () => {
+    /* the idea I have for this function is:
+    1. run a db query to get the number of employees
+    2. set up a for loop with two db queries that uses the aforementioned number to determine how many times each one will run.
+       the first query returns the first names and stores them in the choices array defined below.
+       the second query returns the last names and adds them onto the first names already in the choices array.
+    3. inquirer prompt w/ two questions. first one's a list with the choices being the array the previous steps set up.
+       second one's just a rather straightforward input.
+    4. prompts are sent into updateEmployee function */
+    let choices = ["Jonathan Cushing"];
+    let loopCount;
+
+    db.query(`SELECT COUNT(id) FROM employee`, (err, cell) => {
+        if(err) {
+            console.log(err.message);
+        } else {
+            loopCount = JSON.stringify(cell);
+            /* The same thing I did to fix getId (stringify, split, includes) won't work here. That one just needs to detect if there's a 1 at the end.
+            This one needs to return whatever value the db query gives me, and .split("") can't easily be used if there's more than nine employees */
+        }
+    });
+
+    return inquirer.prompt([
+        {
+            type: "list",
+            name: "employee",
+            message: "Which employee's role do you want to update?",
+            choices: choices
+        },
+        {
+            type: "input",
+            name: "role",
+            message: "What is the employee's new role?",
+            validate: nameInput => {
+                if (nameInput) {
+                    return true;
+                } else {
+                    console.log("If your employee doesn't have a role in your business, why did you hire them in the first place? Enter a role here please");
+                    return false;
+                }
+            }
+        }
+    ]).then(updateEmployee)
+    .catch(err => {
+        console.log(err);
+    });
+}
+
+const updateEmployee = body => {
+    const sql = `UPDATE employee SET role_id = ? WHERE id = ?`;
+    const params = [getId("role", "title", body.role), 1/* see comment on line 230 */];
+
+    /*db.query(sql, params, (err, result) => {
+        if(err) {
+            console.log(err.message);
+        } else {
+            console.log("Employee's role has been updated");
+        }
+        return promptUser();
+    });*/
 };
 
 const getId = (table, rowName, searchTerm) => {
@@ -243,7 +326,7 @@ const getId = (table, rowName, searchTerm) => {
                 return cell[0].id;
             });
         } else {
-        console.log(`Hmmm... it seems that the ${table} you entered doesn't exist. If you didn't make any typos, try viewing the departments to see if what you're looking for is there.`)
+        console.log(`Hmmm... it seems that the ${table} you entered doesn't exist. If you didn't make any typos, try viewing the ${table}s to see if what you're looking for is there.`)
         return promptUser();
         }
     });
