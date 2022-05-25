@@ -28,7 +28,8 @@ const promptController = input => {
             sql = `SELECT * FROM department`;
             db.query(sql, (err, rows) => {
                 if(err) {
-                    return console.log(err.message);
+                    console.log(err.message);
+                    promptUser();
                 }
                 console.table(rows);
                 promptUser();
@@ -38,7 +39,8 @@ const promptController = input => {
             sql = `SELECT role.*, department.name AS department FROM role LEFT JOIN department ON role.department_id = department.id`;
             db.query(sql, (err, rows) => {
                 if(err) {
-                    return console.log(err.message);
+                    console.log(err.message);
+                    promptUser();
                 }
                 console.table(rows);
                 promptUser();
@@ -48,7 +50,8 @@ const promptController = input => {
             sql = `SELECT employee.*, role.title AS role FROM employee LEFT JOIN role ON employee.role_id = role.id`;
             db.query(sql, (err, rows) => {
                 if(err) {
-                    return console.log(err.message);
+                    console.log(err.message);
+                    promptUser();
                 }
                 console.table(rows);
                 promptUser();
@@ -192,7 +195,8 @@ const addDepartment = body => {
 
     db.query(sql, params, (err, result) => {
         if(err) {
-            return console.log(err.message);
+            console.log(err.message);
+            promptUser();
         }
         console.log("Added " + body.name + " to the database");
         promptUser();
@@ -203,11 +207,14 @@ const addRole = body => {
     const sql = `INSERT INTO role (title, salary, department_id)
     VALUES (?,?,?)`;
     const department_id = getId("department", "name", body.department);
+    console.log("addRole: " + department_id);
     const params = [body.title, body.salary, department_id];
-    // Bug: department_id is undefined by the time the db query below is run. Probably a synchronicity issue. Db query appropriately complains about it
+    /* Bug: department_id is undefined by the time the db query below is run. Probably a synchronicity issue.
+    Async/await doesn't fix this. Db query appropriately complains about it */
     db.query(sql, params, (err, result) => {
         if(err) {
-            return console.log(err.message);
+            console.log(err.message);
+            promptUser();
         }
         console.log("Added " + body.title + " to the database");
         promptUser();
@@ -218,7 +225,7 @@ const addEmployee = body => {
     console.log(body);
     const sql = `INSERT INTO role (first_name, last_name, role_id, manager_id)
     VALUES (?,?,?,?)`;
-    // Not adding anything else here until I fix the issues with addRole, as most of that code could largely be copied into this one
+    // Not adding anything else here until I fix the issues with addRole, as most of that code could more or less be copied into this one
 };
 
 const getId = (table, rowName, searchTerm) => {
@@ -243,7 +250,7 @@ const getId = (table, rowName, searchTerm) => {
                 if(err) {
                     return console.log(err.message);
                 }
-                console.log(cell[0].id);
+                console.log("getId: " + cell[0].id);
                 return cell[0].id;
             });
         } else {
