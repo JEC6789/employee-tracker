@@ -23,6 +23,9 @@ const promptController = input => {
 
     switch(input.whatToDo) {
         case "End Program":
+            db.end(err => {
+                if(err) throw err;
+            });
             return console.log("See you later!");
         case "View Departments":
             sql = `SELECT * FROM department`;
@@ -217,34 +220,35 @@ const addDepartment = body => {
 };
 
 const addRole = body => {
+    console.log("doesn't work");
     const sql = `INSERT INTO role (title, salary, department_id)
     VALUES (?,?,?)`;
     const params = [body.title, body.salary, getId("department", "name", body.department)];
     /* Bug: department_id is undefined by the time the db query below is run. Probably a synchronicity issue.
     Async/await doesn't fix this. Db query appropriately complains about it. addEmployee and updateEmployee suffer from the same issue */
-    db.query(sql, params, (err, result) => {
+    /*db.query(sql, params, (err, result) => {
         if(err) {
             console.log(err.message);
         } else {
             console.log("Added " + body.title + " to the database");
         }
         return promptUser();
-    });
+    });*/
 };
 
 const addEmployee = body => {
-    console.log(body);
+    console.log("doesn't work");
     const sql = `INSERT INTO role (first_name, last_name, role_id, manager_id)
     VALUES (?,?,?,?)`;
     const params = [body.first_name, body.last_name, getId("role", "title", body.role), null/* might need a new function for this. Will probably be even more complex than getId, and I'm already in over my head with that one... */];
-    db.query(sql, params, (err, result) => {
+    /*db.query(sql, params, (err, result) => {
         if(err) {
             console.log(err.message);
         } else {
             console.log("Added " + body.title + " to the database");
         }
         return promptUser();
-    });
+    });*/
 };
 
 const updateEmployeePrompt = () => {
@@ -296,6 +300,7 @@ const updateEmployeePrompt = () => {
 }
 
 const updateEmployee = body => {
+    console.log("doesn't work");
     const sql = `UPDATE employee SET role_id = ? WHERE id = ?`;
     const params = [getId("role", "title", body.role), 1/* see comment on line 230 */];
 
@@ -323,7 +328,8 @@ const getId = (table, rowName, searchTerm) => {
                     console.log(err.message);
                     return promptUser();
                 }
-                return cell[0].id;
+                //return cell[0].id;
+                return promptUser();
             });
         } else {
         console.log(`Hmmm... it seems that the ${table} you entered doesn't exist. If you didn't make any typos, try viewing the ${table}s to see if what you're looking for is there.`)
